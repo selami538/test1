@@ -1,27 +1,27 @@
-export async function onRequest({ request, params }) {
-  const origin = "https://corestream.ronaldovurdu.help/hls/";
-  const filename = params.path; // /hls/sonrası ne geldiyse bu
-  const targetUrl = origin + filename;
+async function handleRequest(request) {
+  const parsedUrl = new URL(request.url);
+  const targetUrl = "https://esraerolseksi.global.ssl.fastly.net" + parsedUrl.pathname.replace("/stream", "") + parsedUrl.search;
 
-  try {
-    const response = await fetch(targetUrl, {
-      headers: {
-        "User-Agent": "Mozilla/5.0 (compatible; Cloudflare Pages Proxy)",
-      },
-    });
-
-    if (!response.ok) {
-      return new Response(`Upstream error ${response.status}`, { status: 502 });
+  const response = await fetch(targetUrl, {
+    cf: {
+      cacheEverything: true,
+      cacheTtl: 360  // Cloudflare cache TTLsdsdsnsd
     }
+  });
 
-    return new Response(response.body, {
-      headers: {
-        "Content-Type": response.headers.get("Content-Type") || "application/vnd.apple.mpegurl",
-        "Cache-Control": "public, max-age=5",
-        "Access-Control-Allow-Origin": "*",
-      },
-    });
-  } catch (e) {
-    return new Response(`Error: ${e.message}`, { status: 500 });
-  }
+  const newHeaders = new Headers(response.headers);
+  newHeaders.delete("set-cookie");
+  newHeaders.set("Access-Control-Allow-Origin", "*");
+
+  // Fastly için Cache-Control başlığını set etsdsdfsdfwsdsd
+
+  
+  return new Response(response.body, {
+    status: response.status,
+    headers: newHeaders
+  });
 }
+
+addEventListener("fetch", event => {
+  event.respondWith(handleRequest(event.request));
+});
